@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>MineSweeper</title>
+	
+	<style>
+	canvas {
+		display: block;
+		position: absolute;
+		border: 1px solid #000;
+		margin: auto;
+		top: 0;
+		bottom: 0;
+		right: 0;
+		left: 0;
+	}
+	</style>
+</head>
+<body style="background: #fff;">
+<script>
+canvas = document.createElement("canvas");
+var
+COLS = 20,
+ROWS = 20,
+CWIDTH = 30,
+CHEIGHT = 30,
+CHEAT_CODE = "837279876679776683",	//showbombs
+cheat_in="",
+cheat= new Array(9),
+pos_x=[],
+pos_y=[],
+EMPTY=0,
+BOMB=9,
+TRUE=1,
+FALSE=0,
+game=0,
+score=0,
+grid_x=null,
+grid_y=null,
+keyin="",
+i=0,
+j=0,
+grid = new Array(ROWS),
+grid_visit = new Array(ROWS),
+recursion_trace = new Array(ROWS),
+no_of_bombs = COLS*ROWS/5;
+
+
+//here x is the row position or vertical offset and y is column position that is horizontal offset
+function clearGrid(x, y){
+
+
+	if(grid[x][y] == BOMB){
+		gameOver(x, y);
+	}
+
+	grid_visit[x][y] = true;
+	recursion_trace[x][y] = true;
+
+	if(grid[x][y] != EMPTY){
+		console.log(x,y,"return condition met");
+		return;
+	}
+	else 
+	if(grid[x][y] == EMPTY){
+
+		if(x-1>-1 && grid[x-1][y] != BOMB && recursion_trace[x-1][y] == false){		//cell above the current
+			//console.log(x-1,y,"cell above the current");
+			clearGrid(x-1, y);
+		}
+
+		if(x+1<ROWS && grid[x+1][y] != BOMB && recursion_trace[x+1][y] == false){		//cell below the current
+			//console.log(x+1,y,"cell below the current");
+			clearGrid(x+1, y);
+		}
+
+		if(y-1>-1 && grid[x][y-1] != BOMB && recursion_trace[x][y-1] == false){			//cell left of the current
+			//console.log(x,y-1,"cell left of the current");
+			clearGrid(x, y-1);
+		}
+
+		if(y+1<COLS && grid[x][y+1] != BOMB && recursion_trace[x][y+1] == false){		//cell right of the current
+			//console.log(x,y+1,"cell right of the current");
+			clearGrid(x, y+1);
+		}
+		
+		return;
+	}
+}
+
+function gameOver(x, y){
+	grid[x][y] = 10;
+	for(i=0;i<ROWS;i++){
+		for(j=0;j<COLS;j++){
+			if(grid[i][j]==BOMB){
+				grid_visit[i][j] = true;
+			}
+		}
+	}
+	game=1;
+}
+
+function init(){
+	game=0;
+	for(i=0;i<ROWS;i++){
+		if(i<9){
+			cheat[i] = 0;
+		}
+		grid[i] = new Array(COLS);
+		grid_visit[i] = new Array(COLS);
+		recursion_trace[i] = new Array(COLS);
+		for(j=0;j<COLS;j++){
+			grid[i][j] = EMPTY;
+			grid_visit[i][j] = false;
+			recursion_trace[i][j] = false;
+			ctx.beginPath();
+			ctx.rect(j*CWIDTH, i*CHEIGHT, CWIDTH, CHEIGHT);
+			ctx.fillStyle = 'white'
+ 			ctx.fill();
+			ctx.lineWidth = 0.5;
+			ctx.strokeStyle = 'black';
+			ctx.stroke();
+		}
+	}
+
+
+	for(i=0;i<no_of_bombs;i++){
+		pos_y[i] = parseInt(Math.random()*ROWS);	//taking row positions of the bombs
+	}
+	for(j=0;j<no_of_bombs;j++){
+		pos_x[j] = parseInt(Math.random()*COLS);	//taking column positions of the bombs
+	}
+	for(i=0;i<no_of_bombs;i++){
+		var hor = pos_x[i];
+		var ver = pos_y[i];
+		grid[ver][hor] = BOMB;
+}
+
+	for(i=0;i<ROWS;i++){
+		for(j=0;j<COLS;j++){
+			var hint = 0;
+			if(grid[i][j]!=BOMB){
+
+				if(i-1>-1 && j-1>-1){
+					if(grid[i-1][j-1]==BOMB){
+						hint++;
+					}
+				}
+
+				if(i-1>-1){
+					if(grid[i-1][j]==BOMB){
+						hint++;
+					}
+				}
+
+				if(i-1>-1 && j+1<COLS){
+					if(grid[i-1][j+1]==BOMB){
+						hint++;
+					}
+				}
+
+				if(j+1<COLS){
+					if(grid[i][j+1]==BOMB){
+						hint++;
+					}
+				}
+
+				if(i+1<ROWS && j+1<COLS){
+					if(grid[i+1][j+1]==BOMB){
+						hint++;
+					}
+				}
+
+				if(i+1<ROWS){
+					if(grid[i+1][j]==BOMB){
+						hint++;
+					}
+				}
+
+				if(i+1<ROWS && j-1>-1){
+					if(grid[i+1][j-1]==BOMB){
+						hint++;
+					}
+				}
+
+				if(j-1>-1){
+					if(grid[i][j-1]==BOMB){
+						hint++;
+					}
+				}
+
+				grid[i][j] = hint;
+			}
+		}
+	}
+}
+
+function update(){
+
+	if(cheat_in == CHEAT_CODE){
+		for(i=0;i<ROWS;i++){
+			for(j=0;j<COLS;j++){
+				if(grid[i][j]==BOMB){
+					grid_visit[i][j] = true;
+				}
+			}
+		}
+	}
+
+	if(cheat_in != CHEAT_CODE && game != 1){
+		for(i=0;i<ROWS;i++){
+			for(j=0;j<COLS;j++){
+				if(grid[i][j]==BOMB){
+					grid_visit[i][j] = false;
+				}
+			}
+		}
+	}
+
+	if(grid_x != NaN && grid_x != null && grid_x<COLS && grid_y<ROWS){
+		if(grid_visit[grid_y][grid_x] == false){
+			//console.log(grid[grid_y][grid_x], grid_visit[grid_y][grid_x]);
+			clearGrid(grid_y, grid_x);
+		}
+	}
+
+	for(i=0;i<ROWS;i++){
+		for(j=0;j<COLS;j++){
+			recursion_trace[i][j] = false;
+		}
+	}
+
+	grid_x=null;
+	grid_y=null;
+}
+
+function draw(){
+	for(i=0;i<ROWS;i++){
+		for(j=0;j<COLS;j++){
+			if(grid_visit[i][j] == true){
+				/*ctx.beginPath();
+				ctx.rect(j*CWIDTH, i*CHEIGHT, CWIDTH, CHEIGHT);
+					ctx.fillStyle = 'white'
+ 				ctx.fill();
+				ctx.lineWidth = 0.5;
+				ctx.strokeStyle = 'black';
+				ctx.stroke();*/
+				ctx.beginPath();
+				ctx.rect(j*CWIDTH, i*CHEIGHT, CWIDTH, CHEIGHT);
+				ctx.fillStyle = '#DADADA';
+				if(grid[i][j]==10){
+					ctx.fillStyle = 'red';
+				}
+ 				ctx.fill();
+				ctx.lineWidth = 0.5;
+				ctx.strokeStyle = 'black';
+				ctx.stroke();
+				if(grid[i][j]>0 && grid[i][j]<9){
+					ctx.font="8px Arial";
+					ctx.fillStyle = 'blue';
+					ctx.fillText(grid[i][j], j*CWIDTH+CWIDTH/2-2,i*CHEIGHT+CHEIGHT/2);
+				}
+				else
+				if(grid[i][j] >= BOMB){
+					ctx.beginPath();
+      				ctx.arc(j*CWIDTH+CWIDTH/2, i*CHEIGHT+CHEIGHT/2, CWIDTH/6, 0, 2 * Math.PI, false);
+      				ctx.fillStyle = 'black';
+      				ctx.fill();
+				}
+			}
+			else 
+			if(grid_visit[i][j] == false){
+				ctx.beginPath();
+				ctx.rect(j*CWIDTH, i*CHEIGHT, CWIDTH, CHEIGHT);
+					ctx.fillStyle = 'white'
+ 				ctx.fill();
+				ctx.lineWidth = 0.5;
+				ctx.strokeStyle = 'black';
+				ctx.stroke();
+			}
+		}
+	}
+
+	if(game==1){
+		ctx.font="40px Arial";
+		ctx.fillStyle = 'gray';
+		ctx.fillText('GAME OVER', COLS*CWIDTH/2-140, ROWS*CHEIGHT/2);
+		ctx.font="15px Arial";
+		ctx.fillText('press space to restart', COLS*CWIDTH/2-90, ROWS*CHEIGHT/2+40);
+	}
+}
+	
+
+
+function loop() {
+	update();
+	draw();
+	window.requestAnimationFrame(loop, canvas);
+}
+
+function main(){
+	canvas.width = COLS*CWIDTH;
+	canvas.height = ROWS*CHEIGHT;
+	ctx = canvas.getContext("2d");
+	document.body.appendChild(canvas);
+
+	document.addEventListener("keydown", function(evt){
+		if(evt.keyCode == 32){
+			init();
+		}
+
+		keyin = evt.keyCode.toString();
+
+		var keychunks=""
+		cheat.unshift(keyin);
+		cheat.pop();
+		for(i=9-1;i>=0;i--){
+			keychunks += cheat[i];
+		}
+		cheat_in = keychunks;
+		keychunks = "";
+
+
+		//console.log(keyin);
+		//console.log(cheat_in);
+	});
+
+	canvas.addEventListener("mousedown", function(evt)
+
+	{
+	  var h_offset = event.x;
+	  var v_offset = event.y;
+
+	  h_offset -= canvas.offsetLeft;
+	  v_offset -= canvas.offsetTop;
+
+	  grid_x = parseInt(h_offset/CWIDTH);
+	  grid_y = parseInt(v_offset/CHEIGHT);
+	  //console.log(grid_y, grid_x);
+
+	});
+
+
+	init();
+	loop();
+}
+
+main();
+
+</script>
+</body>
+</html>
+

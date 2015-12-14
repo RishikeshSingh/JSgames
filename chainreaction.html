@@ -17,7 +17,7 @@
 	}
 	</style>
 </head>
-<body>
+<body style="background: #000;">
 <script>
 canvas = document.createElement("canvas");
 var
@@ -27,22 +27,27 @@ CWIDTH = 40,
 CHEIGHT = 40,
 x=0,
 y=0,
+boobytrap=0,
+visited_count=0,
 timer=0,
 grid_x=null,
 grid_y=null,
 h_offset,
 v_offset,
+counter=0;
 flag=2;
 
 var gridvalue = new Array(14);
 var color = new Array(14);
+var visited = new Array(14);
 for (i=0; i <14; i++){
     gridvalue[i] = new Array(14);
     color[i] = new Array(14);
+    visited[i] = new Array(14);
 }
 
-function delay(){
-	var delay = 0.6; // 1 second delay
+/*function delay(){
+	var delay = 0.9; 
 	var now = new Date();
 	var desiredTime = new Date().setSeconds(now.getSeconds() + delay);
 
@@ -50,7 +55,7 @@ function delay(){
     	now = new Date(); // update the current time
 	}
 	return;
-}
+}*/
 
 function explosion(x, y){
 	//delay();
@@ -64,58 +69,54 @@ function explosion(x, y){
 	ctx.strokeStyle = '#4F89F2';
 	ctx.stroke();
 
-	delay();
 
 	if(x+1<14){
 		color[x+1][y] = color[x][y];
+		evolve(x+1, y);
+
 	}
-	if(x-1>0){
+	if(x-1>-1){
 		color[x-1][y] = color[x][y];
+		evolve(x-1, y);
+
 	}
 	if(y+1<14){
 		color[x][y+1] = color[x][y];
+		evolve(x, y+1);
+
 	}
-	if(y-1>0){
+	if(y-1>-1){
 		color[x][y-1] = color[x][y];
+		evolve(x, y-1);
+
 	}
 
-	if(x+1<14){
-		evolve(x+1, y);
-		delay();
-	}
-	if(x-1>0){
-		evolve(x-1, y);
-		delay();
-	}
-	if(y+1<14){
-		evolve(x, y+1);
-		delay();
-	}
-	if(y-1>0){
-		evolve(x, y-1);
-		delay();
-	}
+	color[x][y] = 0;
 	return;
 }
 
 function evolve(x, y){
-
-	ctx.beginPath();
-	ctx.rect(x*CWIDTH, y*CHEIGHT, CWIDTH, CHEIGHT);
-	ctx.fillStyle = 'black';
-	ctx.fill();
-	ctx.lineWidth = 2;
-	ctx.strokeStyle = '#4F89F2';
-	ctx.stroke();
+	visited[x][y] = 1;
+		boobytrap++;
+		if(boobytrap>400){
+			return;
+		}
+		ctx.beginPath();
+		ctx.rect(x*CWIDTH, y*CHEIGHT, CWIDTH, CHEIGHT);
+		ctx.fillStyle = 'black';
+		ctx.fill();
+		ctx.lineWidth = 2;
+		ctx.strokeStyle = '#4F89F2';
+		ctx.stroke();
 	//var x1=x,y1=y;
 	//console.log(gridvalue[1][1]);
 	gridvalue[x][y]++;
 	console.log(gridvalue[x][y], color[x][y], flag%2);
 	if(color[x][y] == 1){
-		ctx.fillStyle = 'green';
+		ctx.fillStyle = '#00F4AC';
 	}
 	else if(color[x][y] == 2){
-		ctx.fillStyle = 'red';
+		ctx.fillStyle = '#FF2A2A';
 	}
 	//drawing one circle
 	if(gridvalue[x][y] == 1){
@@ -149,6 +150,19 @@ function evolve(x, y){
 
 	if(isMature(x, y)){
 		explosion(x, y);
+	}
+
+	if(flag%2==0){
+		ctx.fillStyle = '#00F4AC';
+		ctx.fillText("G R E E N", 40, 580);
+		ctx.fillStyle = 'white';
+		ctx.fillText("R E D", 480, 580);
+	}
+	else{
+		ctx.fillStyle = 'white';
+		ctx.fillText("G R E E N", 40, 580);
+		ctx.fillStyle = 'red';
+		ctx.fillText("R E D", 480, 580);
 	}
 	return;
 }
@@ -187,13 +201,27 @@ function isMature(x, y){
 
 
 function init() {
-
+	var it=0;
 	for(i=0; i<14; i++){
 		for(j=0; j<14; j++){
 			var pos_x = i*CWIDTH;
 			var pos_y = j*CHEIGHT;
-			color[i][j] = 0;
-			gridvalue[i][j] = 0;
+			visited[i][j] = 0;
+			if(it%2==0){
+				color[i][j] = 1;
+				gridvalue[i][j] = 1;
+				if(i>0 && j>0 && i<13 && j<13){
+					gridvalue[i][j]=2;
+				}
+			}
+			else if(it%2!=0){
+				color[i][j] = 2;
+				gridvalue[i][j] = 1;
+				if(i>0 && j>0 && i<13 && j<13){
+					gridvalue[i][j]=2;
+				}
+			}
+			it++;
 			ctx.beginPath();
 	        ctx.rect(pos_x, pos_y, CWIDTH, CHEIGHT);
 	        ctx.fillStyle = 'black';
@@ -204,23 +232,75 @@ function init() {
 	        flag=0;
 		}
 	}
+	ctx.font="15px Arial";
+	ctx.fillStyle = '#00F4AC';
+	ctx.fillText("G R E E N", 40, 580);
+	ctx.fillStyle = 'white';
+	ctx.fillText("R E D", 480, 580);
 }
 
 function update(){
-
-	if(grid_x != NaN && grid_x != null){
-		//gridvalue[grid_x][grid_y]++;
-
+	ctx.font="15px Arial";
+	if(grid_x != NaN && grid_x != null && grid_x<14 && grid_y<14){
+		//console.log(color[grid_x][grid_y]);
+		boobytrap = 0;
 		if(flag%2==0 && color[grid_x][grid_y]!=2){
 			//console.log(grid_x);
 			color[grid_x][grid_y] = 1;
 			flag++;
 			evolve(grid_x, grid_y);
+			counter =0;
+			for(i=0;i<14;i++){
+				for(j=0;j<14;j++){
+					if(color[i][j] == 2 && visited[i][j] == 1){
+						counter++;
+					}
+					if(visited[i][j] == 1){
+						visited_count++;
+					}
+				}
+			}
+			console.log(counter, visited_count);
+
+			if(counter == 0 && visited_count == COLS*ROWS){
+				ctx.fillStyle = '#00F4AC';
+				ctx.fillText("WINS", 40, 600);
+				console.log("winner");
+				//return;
+			}else{
+				console.log("logic is right")
+				counter=0;
+				visited_count=0;
+			}
 		}
 		else if(flag%2!=0 && color[grid_x][grid_y]!=1){
 			color[grid_x][grid_y] = 2;
 			flag++;
 			evolve(grid_x, grid_y);
+			counter =0;
+			for(i=0;i<14;i++){
+				for(j=0;j<14;j++){
+					if(color[i][j] == 1){
+						counter++;
+					}
+					if(visited[i][j] == 1){
+						visited_count++;
+					}
+				}
+				console.log(counter, visited_count);
+			}
+
+			if(counter == 0 && visited_count == COLS*ROWS){
+				ctx.fillStyle = 'red';
+				ctx.fillText("WINS", 480, 600);
+				console.log("winner");
+				//return;
+			}
+			else{
+				console.log("logic is right")
+				counter=0;
+				visited_count=0;
+			}
 		}
 		
 		grid_x = null;
@@ -239,11 +319,12 @@ function loop() {
 
 function main(){
 	canvas.width = COLS*CWIDTH;
-	canvas.height = ROWS*CHEIGHT;
+	canvas.height = ROWS*CHEIGHT+50;
 	ctx = canvas.getContext("2d");
 	document.body.appendChild(canvas);
 
 	canvas.addEventListener("mousedown", function(evt)
+	//ctx.font="20px Arial";
 
 	{
 	  var h_offset = event.x;

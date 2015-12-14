@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Caterpillar</title>
+	
+	<style>
+	canvas {
+		display: block;
+		position: absolute;
+		border: 1px solid #000;
+		margin: auto;
+		top: 0;
+		bottom: 0;
+		right: 0;
+		left: 0;
+	}
+	</style>
+</head>
+<body>
+<script>
+var
+COLS = 30,
+ROWS = 30,
+EMPTY = 0,
+SNAKE = 1,
+FOOD = 2,
+BRICK = 3,
+DOOR = 4,
+LEFT  = 0,
+UP    = 1,
+RIGHT = 2,
+DOWN  = 3,
+KEY_LEFT  = 37,
+KEY_UP    = 38,
+KEY_RIGHT = 39,
+KEY_DOWN  = 40,
+PAUSE = 80,
+RESTART = 32,
+isOver = false,
+isPaused = false,
+doorCreated =0,
+tail ={x:0, y:0} ,
+gameCondition = "",
+gameIns = "",
+level = 0,
+firstflag = true,
+canvas,	  
+ctx,	  
+frames,
+nx,
+ny,
+keystate = {},
+levelscore = 0,   
+score = 0,
+keyin = 0,
+highScore = 0,
+speed = 0;
+
+grid = {
+	width: null,  
+	height: null, 
+	_grid: null,  
+
+	init: function(d, c, r) {
+		this.width = c;
+		this.height = r;
+		this._grid = [];
+		for (var x=0; x < c; x++) {
+			this._grid.push([]);
+			for (var y=0; y < r; y++) {
+				this._grid[x].push(d);
+			}
+		}
+	},
+
+	set: function(val, x, y) {
+		this._grid[x][y] = val;
+	},
+
+	get: function(x, y) {
+		return this._grid[x][y];
+	}
+}
+
+snake = {
+	direction: null, 
+	last: null,		 
+	_queue: null,	 
+
+	init: function(d, x, y) {
+		this.direction = d;
+		this._queue = [];
+		this.insert(x, y);
+	},
+
+	insert: function(x, y) {
+		this._queue.unshift({x:x, y:y});
+		this.last = this._queue[0];
+	},
+
+	remove: function() {
+		return this._queue.pop();
+	},
+	enter: function(){
+
+	}
+};
+function setFood() {
+	var empty = [];
+	for (var x=0; x < grid.width; x++) {
+		for (var y=0; y < grid.height; y++) {
+			if (grid.get(x, y) === EMPTY) {
+				empty.push({x:x, y:y});
+			}
+		}
+	}
+	var randpos = empty[Math.round(Math.random()*(empty.length - 1))];
+	grid.set(FOOD, randpos.x, randpos.y);
+}
+
+function setDoor(){
+	var empty = [];
+	for (var x=0; x < grid.width; x++) {
+		for (var y=0; y < grid.height; y++) {
+			if (grid.get(x, y) === EMPTY) {
+				empty.push({x:x, y:y});
+			}
+		}
+	}
+	var randpos = empty[Math.round(Math.random()*(empty.length - 1))];
+	grid.set(DOOR, randpos.x, randpos.y);
+}
+
+function main() {
+
+	canvas = document.createElement("canvas");
+	canvas.width = COLS*20;
+	canvas.height = ROWS*20;
+	ctx = canvas.getContext("2d");
+	
+	document.body.appendChild(canvas);
+	ctx.font = "12px Helvetica";
+	frames = 0;
+	keystate = {};
+
+
+	document.addEventListener("keydown", function(evt) {
+		keyin = evt.keyCode;
+		console.log(keyin);
+	});
+	/*document.addEventListener("keyup", function(evt) {
+		delete keystate[evt.keyCode];
+	});*/
+	
+	init();
+	loop();
+}
+
+function init() {
+	keyin = KEY_UP;
+	if(level !== 0){
+	isOver = false;}
+	if(level == 0 && firstflag == true){
+		gameIns = "press SPACE to start";
+		isOver = true;
+	}
+	gameCondition = "";
+	doorCreated = 0;
+	grid.init(EMPTY, COLS, ROWS);
+	var sp = {x:Math.floor(COLS/2), y:ROWS-1};
+	switch(level){
+		case 0: speed =8;
+				break;
+		case 1: speed = 8;
+				var obstacle1 = [2,3,4,5,6,7,8,9,10,11];
+				var obstacle2 = [2,3,4,5,6,7,8,9,10,11];
+				
+				for(i=0;i<10;i++){
+					grid.set(BRICK,obstacle1[i],obstacle2[i]);
+					}
+				break;
+		case 2: speed = 7;
+				var obstacle1 = [2,3,4,5,6,7,8,9,10,11];
+				var obstacle2 = [4,6,8,10,12,14,16,18,22,24];
+				
+				for(i=0;i<10;i++){
+					grid.set(BRICK,obstacle1[i],obstacle2[i]);
+					}
+				break;
+		case 3: speed = 6;
+				var obstacle1 = [2,3,4,5,6,7,8,9,10,11];
+				var obstacle2 = [4,6,8,10,12,14,16,18,22,24];
+				
+				for(i=0;i<10;i++){
+					grid.set(BRICK,obstacle1[i],obstacle2[i]);
+					}
+				break;
+		case 4: speed =5;
+				var obstacle1 = [2,3,4,5,6,7,8,9,10,11];
+				var obstacle2 = [2,3,4,5,6,7,8,9,10,11];
+				
+				for(i=0;i<10;i++){
+					grid.set(BRICK,obstacle1[i],obstacle2[i]);
+					}
+				break;
+	}
+	snake.init(UP, sp.x, sp.y);
+	grid.set(SNAKE, sp.x, sp.y);
+	setFood();
+}
+
+function loop() {
+	update();
+	draw();
+	window.requestAnimationFrame(loop, canvas);
+}
+
+function update() {
+	frames++;
+	//console.log(grid._grid[2][3]);
+	//console.log(grid._grid[3][4]++);
+
+	if(keyin == RESTART){
+		isOver = false;
+		gameCondition = "";
+		gameIns = "";
+		score = 0;
+		firstflag = false;
+		return init();
+	}
+
+	if(keyin == PAUSE){
+		isPaused = !isPaused;
+	}
+	
+	if (keyin == KEY_LEFT && snake.direction !== RIGHT) {
+		snake.direction = LEFT; 
+	}
+	
+	if (keyin == KEY_UP && snake.direction !== DOWN) {
+		snake.direction = UP;
+	}
+	
+	if (keyin == KEY_RIGHT && snake.direction !== LEFT) {
+		snake.direction = RIGHT; 
+	}
+	
+	if (keyin == KEY_DOWN && snake.direction !== UP) {
+		snake.direction = DOWN; 
+	}
+
+	if (keyin == KEY_LEFT && snake.direction == RIGHT) {
+		snake.direction = RIGHT; 
+	}
+	
+	if (keyin == KEY_UP && snake.direction == DOWN) {
+		snake.direction = DOWN;
+	}
+	
+	if (keyin == KEY_RIGHT && snake.direction == LEFT) {
+		snake.direction = LEFT; 
+	}
+	
+	if (keyin == KEY_DOWN && snake.direction == UP) {
+		snake.direction = UP; 
+	}
+
+		
+	if(isPaused){
+			gameCondition = "PAUSED";
+			return ;
+		}
+	if(!isPaused && !isOver){
+		gameCondition = "";
+	} 
+	if(!isOver){
+		gameIns = "";
+	}
+
+
+	if (frames%speed === 0 && !isOver) {
+		
+		 nx = snake.last.x;
+		 ny = snake.last.y;
+
+			switch (snake.direction) {
+				case LEFT:
+					nx--; 
+					break;
+				case UP:
+					ny--; 
+					break;
+				case RIGHT:
+					nx++; 
+					break;
+				case DOWN:
+					ny++; 
+					break;
+			}
+
+			if(0>nx){
+				nx = grid.width-1;
+			}
+			if(nx > grid.width-1){
+				nx = 0;
+			}
+			if(0>ny){
+				ny = grid.height-1;
+			}
+			if(ny > grid.height-1){
+				ny = 0;
+			}
+
+			console.log(nx, ny);
+
+		if (grid.get(nx, ny) === SNAKE   ||
+			grid.get(nx, ny) === BRICK) {		
+				isOver = true;
+				levelscore = 0;
+				level = 0;
+				score = 0;
+				gameCondition = "GAME OVER";
+				gameIns = "press space to restart";
+
+		}
+
+		if(grid.get(nx, ny) === DOOR){
+
+			grid.set(DOOR, nx, ny);
+			snake._queue.shift();
+			nx = snake.last.x;
+			ny = snake.last.y;
+	
+			if(snake._queue.length == 0){
+				level++;
+				levelscore = 0;
+				return init();
+			}
+		}
+		if(levelscore >= ((level+2)*(level+2))+(level*5) && doorCreated < 1){
+			doorCreated++;
+			setDoor();
+		}
+		
+		if (grid.get(nx, ny) === FOOD) {
+			score++;
+			levelscore++;
+			if(score > highScore){
+				highScore = score;
+			}
+			setFood();
+		} else {
+			tail = snake.remove();
+			grid.set(EMPTY, tail.x, tail.y);
+		}
+		
+			if(!isOver){grid.set(SNAKE, nx, ny);
+			snake.insert(nx, ny);}
+		
+	}
+}
+
+function draw() {
+	var tw = canvas.width/grid.width;
+	var th = canvas.height/grid.height;
+
+	for (var x=0; x < grid.width; x++) {
+		for (var y=0; y < grid.height; y++) {
+		
+			switch (grid.get(x, y)) {
+				case EMPTY:
+					ctx.fillStyle = "#B1DB4F"; ctx.fillRect(x*tw, y*th, tw, th);
+					break;
+				case SNAKE:
+					ctx.fillStyle = "#B9DD4C";
+					ctx.fillRect(x*tw, y*th, tw, th); 
+					ctx.fillStyle = "#1AA260"; 
+					ctx.fillRect(x*tw+2, y*th+2, tw-4, th-4);
+					break;
+				case FOOD:
+					ctx.fillStyle = "#E70B0A"; 
+					ctx.beginPath();
+      				ctx.arc(x*tw+(tw/2-2), y*th+(tw/2-2), tw/2-2, 0, 2 * Math.PI, false);
+      				ctx.fill();
+					break;
+				case BRICK:
+					ctx.fillStyle = "#54270B"; ctx.fillRect(x*tw, y*th, tw, th);
+					break;
+				case DOOR:
+					ctx.fillStyle = "#000"; ctx.fillRect(x*tw, y*th, tw, th);
+					break;
+			}
+			
+		}
+	}
+
+	ctx.fillStyle = "#000";
+	ctx.fillText("SCORE: " + score, 10, canvas.height-10);
+	ctx.fillText("LEVEL: " + level, 260, canvas.height-10);
+	ctx.fillText("HIGH SCORE: " + highScore, 480, canvas.height-10);
+	ctx.fillText(gameCondition , 260, canvas.height-300);
+	ctx.fillText(gameIns , 240, canvas.height-250);
+}
+
+main();
+</script>
+</body>
+</html>
